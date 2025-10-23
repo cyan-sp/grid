@@ -15,12 +15,21 @@
 (fn Square.draw-tile [self]
   ;; (if (not (. self :active))
   ;;     (love.graphics.setColor 1 0 0))
+  (love.graphics.setColor 1 1 1)
   (love.graphics.rectangle "line" self.x self.y 100 100)
-  (love.graphics.print self.id self.x self.y))
+  (love.graphics.print self.id self.x self.y)
+  ;; (love.graphics.setColor 1 0 0)
+  ;; (love.graphics.circle "fill" (+ self.x 50) (+ self.y 50) 3)
+)
 
 (fn Square.draw-cursor [self]
   (love.graphics.setColor 0 1 1)
   (love.graphics.rectangle "line" self.x self.y 100 100)
+  (love.graphics.setColor 1 0 0)
+  (love.graphics.circle "fill" (+ self.x 50) (+ self.y 50) 3)
+  (love.graphics.print (.. "x:" self.x "y:" self.y) (+ self.x 50) (+ self.y 50))
+  (print (.. "active : " self.id " x:" self.x "y:" self.y))
+  ;; (print (love.graphics.print (.. "x:" self.x "y:" self.y) (+ self.x 50) (+ self.y 50)))
   ;; (love.graphics.line self.x self.y 100 100)
   )
 
@@ -28,6 +37,7 @@
   (tset self :active true))
 
 (var game-squares [])
+(var cursor-position 4)
 
 (local Table (Object:extend))
 
@@ -66,8 +76,11 @@
  :draw (fn draw [message]
          (local (w h _flags) (love.window.getMode))
          (draw-squares)
-         (Square.draw-cursor (. game-squares 2)))
+         (Square.draw-cursor (. game-squares cursor-position)))
 
  :keypressed (fn keypressed [key set-mode]
                (when (= key "escape")
-                 (love.event.quit)))}
+                 (love.event.quit))
+               (when (= key "down")
+                 (set cursor-position 1))
+)}
