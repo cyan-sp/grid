@@ -6,58 +6,48 @@
 
 (local Square (Object:extend))
 
-(local GRID-SIZE 100)
+(local GRID-SIZE 70)
 
 (fn Square.new [self id x y]
   (set self.id id)
   (set self.x x)
   (set self.y y)
-  (set self.active false))
+  (set self.active true))
 
 (fn Square.draw-tile [self]
   (love.graphics.setColor 1 1 1)
+  (if (= (. self.active) false)      
+      (love.graphics.setColor 1 0 0))
+  
   (love.graphics.rectangle "line" self.x self.y GRID-SIZE GRID-SIZE)
   (love.graphics.print self.id self.x self.y))
 
 (fn Square.draw-cursor [self]
+  (love.graphics.setFont (love.graphics.newFont 19))
   (love.graphics.setColor 0 1 1)
   (love.graphics.rectangle "line" self.x self.y GRID-SIZE GRID-SIZE)
-  (love.graphics.circle "fill" (+ self.x (/ GRID-SIZE 2)) (+ self.y (/ GRID-SIZE 2)) 3)
-  (love.graphics.print (.. "x:" self.x "y:" self.y) (+ self.x 50) (+ self.y 50)))
+  (local font (love.graphics.getFont))
+  (local text-height (font:getHeight))
+  (love.graphics.printf "@" self.x (+ self.y (/ GRID-SIZE 2) (/ text-height -2)) GRID-SIZE "center"))
 
 (var cursor-id 2)
 
-(fn Square.activate [self]
-  (tset self :active true))
+(fn Square.desactivate [self]
+  (tset self :active false))
 
 (var game-squares [])
 
-(fn Square.search-below [self]
-  (let [cursor (. game-squares cursor-id)]
+(fn Square.search [self direction]
+  (let [cursor (. game-squares cursor-id)
+        [dx dy] (case direction
+                  :up [0 (- GRID-SIZE)]
+                  :down [0 GRID-SIZE]
+                  :left [(- GRID-SIZE) 0]
+                  :right [GRID-SIZE 0])]
     (each [_ square (ipairs game-squares)]
-      (when (and (= (. square :y) (+ GRID-SIZE (. cursor :y)))
-                 (= (. square :x) (. cursor :x)))
-        (set cursor-id (. square :id))))))
-
-(fn Square.search-above [self]
-  (let [cursor (. game-squares cursor-id)]
-    (each [_ square (ipairs game-squares)]
-      (when (and (= (. square :y) (- (. cursor :y) GRID-SIZE))
-                 (= (. square :x) (. cursor :x)))
-        (set cursor-id (. square :id))))))
-
-(fn Square.search-right [self]
-  (let [cursor (. game-squares cursor-id)]
-    (each [_ square (ipairs game-squares)]
-      (when (and (= (. square :x) (+ GRID-SIZE (. cursor :x)))
-                 (= (. square :y) (. cursor :y)))
-        (set cursor-id (. square :id))))))
-
-(fn Square.search-left [self]
-  (let [cursor (. game-squares cursor-id)]
-    (each [_ square (ipairs game-squares)]
-      (when (and (= (. square :x) (- (. cursor :x) GRID-SIZE))
-                 (= (. square :y) (. cursor :y)))
+      (when (and (= (. square :x) (+ (. cursor :x) dx))
+                 (= (. square :y) (+ (. cursor :y) dy))
+                 (= (. square :active) true))
         (set cursor-id (. square :id))))))
 
 (local Table (Object:extend))
@@ -88,7 +78,8 @@
 
 {:activate (fn activate []
              (local table (Table))
-             (table:table-make 3 3))
+             (table:table-make 5 5)
+             (Square.desactivate (. game-squares 1)))
 
  :draw (fn draw [message]
          (local (w h _flags) (love.window.getMode))
@@ -99,11 +90,10 @@
                (when (= key "escape")
                  (love.event.quit))
                (when (= key "down")
-                 (Square.search-below (. game-squares cursor-id)))
+                 (Square.search (. game-squares cursor-id) :down))
                (when (= key "up")
-                 (Square.search-above (. game-squares cursor-id)))
+                 (Square.search (. game-squares cursor-id) :up))
                (when (= key "right")
-                 (Square.search-right (. game-squares cursor-id)))
+                 (Square.search (. game-squares cursor-id) :right))
                (when (= key "left")
-                 (Square.search-left (. game-squares cursor-id))))}
-
+                 (Square.search (. game-squares cursor-id) :left)))}
