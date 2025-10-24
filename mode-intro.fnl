@@ -6,6 +6,8 @@
 
 (local Square (Object:extend))
 
+(local GRID-SIZE 100)
+
 (fn Square.new [self id x y]
   (set self.id id)
   (set self.x x)
@@ -13,31 +15,50 @@
   (set self.active false))
 
 (fn Square.draw-tile [self]
-  ;; (if (not (. self :active))
-  ;;     (love.graphics.setColor 1 0 0))
   (love.graphics.setColor 1 1 1)
-  (love.graphics.rectangle "line" self.x self.y 100 100)
-  (love.graphics.print self.id self.x self.y)
-  ;; (love.graphics.setColor 1 0 0)
-  ;; (love.graphics.circle "fill" (+ self.x 50) (+ self.y 50) 3)
-)
+  (love.graphics.rectangle "line" self.x self.y GRID-SIZE GRID-SIZE)
+  (love.graphics.print self.id self.x self.y))
 
 (fn Square.draw-cursor [self]
   (love.graphics.setColor 0 1 1)
-  (love.graphics.rectangle "line" self.x self.y 100 100)
-  (love.graphics.setColor 1 0 0)
-  (love.graphics.circle "fill" (+ self.x 50) (+ self.y 50) 3)
-  (love.graphics.print (.. "x:" self.x "y:" self.y) (+ self.x 50) (+ self.y 50))
-  (print (.. "active : " self.id " x:" self.x "y:" self.y))
-  ;; (print (love.graphics.print (.. "x:" self.x "y:" self.y) (+ self.x 50) (+ self.y 50)))
-  ;; (love.graphics.line self.x self.y 100 100)
-  )
+  (love.graphics.rectangle "line" self.x self.y GRID-SIZE GRID-SIZE)
+  (love.graphics.circle "fill" (+ self.x (/ GRID-SIZE 2)) (+ self.y (/ GRID-SIZE 2)) 3)
+  (love.graphics.print (.. "x:" self.x "y:" self.y) (+ self.x 50) (+ self.y 50)))
+
+(var cursor-id 2)
 
 (fn Square.activate [self]
   (tset self :active true))
 
 (var game-squares [])
-(var cursor-position 4)
+
+(fn Square.search-below [self]
+  (let [cursor (. game-squares cursor-id)]
+    (each [_ square (ipairs game-squares)]
+      (when (and (= (. square :y) (+ GRID-SIZE (. cursor :y)))
+                 (= (. square :x) (. cursor :x)))
+        (set cursor-id (. square :id))))))
+
+(fn Square.search-above [self]
+  (let [cursor (. game-squares cursor-id)]
+    (each [_ square (ipairs game-squares)]
+      (when (and (= (. square :y) (- (. cursor :y) GRID-SIZE))
+                 (= (. square :x) (. cursor :x)))
+        (set cursor-id (. square :id))))))
+
+(fn Square.search-right [self]
+  (let [cursor (. game-squares cursor-id)]
+    (each [_ square (ipairs game-squares)]
+      (when (and (= (. square :x) (+ GRID-SIZE (. cursor :x)))
+                 (= (. square :y) (. cursor :y)))
+        (set cursor-id (. square :id))))))
+
+(fn Square.search-left [self]
+  (let [cursor (. game-squares cursor-id)]
+    (each [_ square (ipairs game-squares)]
+      (when (and (= (. square :x) (- (. cursor :x) GRID-SIZE))
+                 (= (. square :y) (. cursor :y)))
+        (set cursor-id (. square :id))))))
 
 (local Table (Object:extend))
 
@@ -50,7 +71,7 @@
   (for [j 1 height]
     (for [i 1 width]
       (set curr (+ 1 curr))
-      (local square (Square curr (* 100 i) (* 100 j)))
+      (local square (Square curr (* GRID-SIZE i) (* GRID-SIZE j)))
       (table.insert squares square)))
   (set self.squares squares)
   (set game-squares squares)
@@ -67,20 +88,22 @@
 
 {:activate (fn activate []
              (local table (Table))
-             (table:table-make 2 2)
-             ;; (Square.activate (. game-squares 1))
-             ;; (Square.activate (. game-squares 2))
-             
-             )
+             (table:table-make 3 3))
 
  :draw (fn draw [message]
          (local (w h _flags) (love.window.getMode))
          (draw-squares)
-         (Square.draw-cursor (. game-squares cursor-position)))
+         (Square.draw-cursor (. game-squares cursor-id)))
 
  :keypressed (fn keypressed [key set-mode]
                (when (= key "escape")
                  (love.event.quit))
                (when (= key "down")
-                 (set cursor-position 1))
-)}
+                 (Square.search-below (. game-squares cursor-id)))
+               (when (= key "up")
+                 (Square.search-above (. game-squares cursor-id)))
+               (when (= key "right")
+                 (Square.search-right (. game-squares cursor-id)))
+               (when (= key "left")
+                 (Square.search-left (. game-squares cursor-id))))}
+
