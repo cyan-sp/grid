@@ -38,10 +38,10 @@
   (love.graphics.setColor 1 0 0)
   (love.graphics.circle "fill" (+ self.x (/ GRID-SIZE  2)) (+ self.y (/ GRID-SIZE  2)) 3))
 
-(fn Tile.desactivate [self]
-  (tset self :active false))
+;; (fn Tile.desactivate [self]
+;;   (tset self :active false))
 
-(fn Tile.search [self direction]
+(fn Tile.search [direction]
   (let [cursor (. game-tiles cursor-id)
         [dx dy] (case direction
                   :up [0 (- GRID-SIZE)]
@@ -96,10 +96,10 @@
                (when (= key "escape")
                  (love.event.quit))
                (when (= key "down")
-                 (Tile.search (. game-tiles cursor-id) :down))
+                 (Tile.search  :down))
                (when (= key "up")
-                 (Tile.search (. game-tiles cursor-id) :up))
+                 (Tile.search  :up))
                (when (= key "right")
-                 (Tile.search (. game-tiles cursor-id) :right))
+                 (Tile.search  :right))
                (when (= key "left")
-                 (Tile.search (. game-tiles cursor-id) :left)))}
+                 (Tile.search  :left)))}
