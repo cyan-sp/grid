@@ -16,13 +16,10 @@
 (fn Tile.new [self id x y]
   (set self.id id)
   (set self.x x)
-  (set self.y y)
-  (set self.active true))
+  (set self.y y))
 
 (fn Tile.draw-tile [self]
   (love.graphics.setColor 1 1 1)
-  (if (= (. self.active) false)      
-      (love.graphics.setColor 1 0 0))  
   (love.graphics.rectangle "line" self.x self.y GRID-SIZE GRID-SIZE)
   (love.graphics.print self.id self.x self.y))
 
@@ -36,22 +33,21 @@
 
 (fn Tile.draw-apple [self]
   (love.graphics.setColor 1 0 0)
-  (love.graphics.circle "fill" (+ self.x (/ GRID-SIZE  2)) (+ self.y (/ GRID-SIZE  2)) 3))
+  (love.graphics.circle "fill" (+ self.x (/ GRID-SIZE  2)) (+ self.y (/ GRID-SIZE  2)) 3)
+  (if (= (. self :id) cursor-id)
+      (set apple-id (math.random 1 25))))
 
-;; (fn Tile.desactivate [self]
-;;   (tset self :active false))
+(local snake-id-tiles [])
 
-(fn Tile.search [direction]
-  (let [cursor (. game-tiles cursor-id)
-        [dx dy] (case direction
+(fn Tile.step [self direction]
+  (let [[dx dy] (case direction
                   :up [0 (- GRID-SIZE)]
                   :down [0 GRID-SIZE]
                   :left [(- GRID-SIZE) 0]
                   :right [GRID-SIZE 0])]
     (each [_ tile (ipairs game-tiles)]
-      (when (and (= (. tile :x) (+ (. cursor :x) dx))
-                 (= (. tile :y) (+ (. cursor :y) dy))
-                 (= (. tile :active) true))
+      (when (and (= (. tile :x) (+ self.x dx))
+                 (= (. tile :y) (+ self.y dy)))
         (set cursor-id (. tile :id))))))
 
 (local Table (Object:extend))
@@ -83,7 +79,9 @@
 {:activate (fn activate []
              (local table (Table))
              (table:table-make 5 5)
-             (Tile.desactivate (. game-tiles 1)))
+             (Tile.step (. game-tiles cursor-id) :right)
+             (Tile.step (. game-tiles cursor-id) :right)
+             )
 
  :draw (fn draw [message]
          (local (w h _flags) (love.window.getMode))
@@ -96,10 +94,10 @@
                (when (= key "escape")
                  (love.event.quit))
                (when (= key "down")
-                 (Tile.search  :down))
+                 (Tile.step (. game-tiles cursor-id) :down))
                (when (= key "up")
-                 (Tile.search  :up))
+                 (Tile.step (. game-tiles cursor-id) :up))
                (when (= key "right")
-                 (Tile.search  :right))
+                 (Tile.step (. game-tiles cursor-id) :right))
                (when (= key "left")
-                 (Tile.search  :left)))}
+                 (Tile.step (. game-tiles cursor-id) :left)))}
