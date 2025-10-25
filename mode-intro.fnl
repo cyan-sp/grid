@@ -13,6 +13,11 @@
 
 (var game-tiles [])
 
+(var move-timer 0)
+(var move-interval 0.5)
+
+(var step-direction :right)
+
 (fn Tile.new [self id x y]
   (set self.id id)
   (set self.x x)
@@ -33,7 +38,7 @@
 
 (fn Tile.draw-apple [self]
   (love.graphics.setColor 1 0 0)
-  (love.graphics.circle "fill" (+ self.x (/ GRID-SIZE  2)) (+ self.y (/ GRID-SIZE  2)) 3)
+  (love.graphics.circle "fill" (+ self.x (/ GRID-SIZE  2)) (+ self.y (/ GRID-SIZE  2)) 5)
   (if (= (. self :id) cursor-id)
       (set apple-id (math.random 1 25))))
 
@@ -78,26 +83,36 @@
 
 {:activate (fn activate []
              (local table (Table))
-             (table:table-make 5 5)
-             (Tile.step (. game-tiles cursor-id) :right)
-             (Tile.step (. game-tiles cursor-id) :right)
-             )
+             (table:table-make 8 5))
 
  :draw (fn draw [message]
          (local (w h _flags) (love.window.getMode))
          (draw-tiles)
          (Tile.draw-cursor (. game-tiles cursor-id))
          (Tile.draw-apple (. game-tiles apple-id))
+ 
 )
+ :update (fn update [dt]
+    (set move-timer (+ move-timer dt))
+    (print (.. "dt : " dt))
+    (when (> move-timer move-interval)
+      ;; (print (.. "(O.o) move-timer : " move-timer " move-interval : " move-interval))
+      (set move-timer 0)
+      (Tile.step (. game-tiles cursor-id) step-direction)))
 
  :keypressed (fn keypressed [key set-mode]
                (when (= key "escape")
                  (love.event.quit))
                (when (= key "down")
-                 (Tile.step (. game-tiles cursor-id) :down))
+                 ;; (Tile.step (. game-tiles cursor-id) :down)
+                 (set step-direction :down))
                (when (= key "up")
-                 (Tile.step (. game-tiles cursor-id) :up))
+                 ;; (Tile.step (. game-tiles cursor-id) :up)
+                 (set step-direction :up))
                (when (= key "right")
-                 (Tile.step (. game-tiles cursor-id) :right))
+                 ;; (Tile.step (. game-tiles cursor-id) :right)
+                 (set step-direction :right))
                (when (= key "left")
-                 (Tile.step (. game-tiles cursor-id) :left)))}
+                 ;; (Tile.step (. game-tiles cursor-id) :left)
+                 (set step-direction :left)))}
+
