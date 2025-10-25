@@ -1,28 +1,32 @@
 (local fennel (require :lib.fennel))
 (import-macros {: incf} :sample-macros)
-(local fennel (require :lib.fennel))
 (local Object (require :lib.classic))
 (local unpack (or table.unpack _G.unpack))
 
-(local Square (Object:extend))
+(local Tile (Object:extend))
 
 (local GRID-SIZE 70)
 
-(fn Square.new [self id x y]
+(var cursor-id 2)
+
+(var apple-id 1)
+
+(var game-tiles [])
+
+(fn Tile.new [self id x y]
   (set self.id id)
   (set self.x x)
   (set self.y y)
   (set self.active true))
 
-(fn Square.draw-tile [self]
+(fn Tile.draw-tile [self]
   (love.graphics.setColor 1 1 1)
   (if (= (. self.active) false)      
-      (love.graphics.setColor 1 0 0))
-  
+      (love.graphics.setColor 1 0 0))  
   (love.graphics.rectangle "line" self.x self.y GRID-SIZE GRID-SIZE)
   (love.graphics.print self.id self.x self.y))
 
-(fn Square.draw-cursor [self]
+(fn Tile.draw-cursor [self]
   (love.graphics.setFont (love.graphics.newFont 19))
   (love.graphics.setColor 0 1 1)
   (love.graphics.rectangle "line" self.x self.y GRID-SIZE GRID-SIZE)
@@ -30,70 +34,72 @@
   (local text-height (font:getHeight))
   (love.graphics.printf "@" self.x (+ self.y (/ GRID-SIZE 2) (/ text-height -2)) GRID-SIZE "center"))
 
-(var cursor-id 2)
+(fn Tile.draw-apple [self]
+  (love.graphics.setColor 1 0 0)
+  (love.graphics.circle "fill" (+ self.x (/ GRID-SIZE  2)) (+ self.y (/ GRID-SIZE  2)) 3))
 
-(fn Square.desactivate [self]
+(fn Tile.desactivate [self]
   (tset self :active false))
 
-(var game-squares [])
-
-(fn Square.search [self direction]
-  (let [cursor (. game-squares cursor-id)
+(fn Tile.search [self direction]
+  (let [cursor (. game-tiles cursor-id)
         [dx dy] (case direction
                   :up [0 (- GRID-SIZE)]
                   :down [0 GRID-SIZE]
                   :left [(- GRID-SIZE) 0]
                   :right [GRID-SIZE 0])]
-    (each [_ square (ipairs game-squares)]
-      (when (and (= (. square :x) (+ (. cursor :x) dx))
-                 (= (. square :y) (+ (. cursor :y) dy))
-                 (= (. square :active) true))
-        (set cursor-id (. square :id))))))
+    (each [_ tile (ipairs game-tiles)]
+      (when (and (= (. tile :x) (+ (. cursor :x) dx))
+                 (= (. tile :y) (+ (. cursor :y) dy))
+                 (= (. tile :active) true))
+        (set cursor-id (. tile :id))))))
 
 (local Table (Object:extend))
 
 (fn Table.new [self]
-  (set self.squares []))
+  (set self.tiles []))
 
 (fn Table.table-make [self width height]
-  (local squares [])
+  (local tiles [])
   (var curr 0)
   (for [j 1 height]
     (for [i 1 width]
       (set curr (+ 1 curr))
-      (local square (Square curr (* GRID-SIZE i) (* GRID-SIZE j)))
-      (table.insert squares square)))
-  (set self.squares squares)
-  (set game-squares squares)
-  (print (.. :squares (fennel.view squares)))
-  (local x-values (icollect [_ square (ipairs squares)] square.x))
-  (local y-values (icollect [_ square (ipairs squares)] square.y))
+      (local tile (Tile curr (* GRID-SIZE i) (* GRID-SIZE j)))
+      (table.insert tiles tile)))
+  (set self.tiles tiles)
+  (set game-tiles tiles)
+  (print (.. :tiles (fennel.view tiles)))
+  (local x-values (icollect [_ tile (ipairs tiles)] tile.x))
+  (local y-values (icollect [_ tile (ipairs tiles)] tile.y))
   (local max-x (math.max (unpack x-values)))
   (local max-y (math.max (unpack y-values)))
   (print (.. "Max X: " max-x " Max Y: " max-y)))
 
-(fn draw-squares []
-  (each [_ square (ipairs game-squares)]
-    (square:draw-tile)))
+(fn draw-tiles []
+  (each [_ tile (ipairs game-tiles)]
+    (tile:draw-tile)))
 
 {:activate (fn activate []
              (local table (Table))
              (table:table-make 5 5)
-             (Square.desactivate (. game-squares 1)))
+             (Tile.desactivate (. game-tiles 1)))
 
  :draw (fn draw [message]
          (local (w h _flags) (love.window.getMode))
-         (draw-squares)
-         (Square.draw-cursor (. game-squares cursor-id)))
+         (draw-tiles)
+         (Tile.draw-cursor (. game-tiles cursor-id))
+         (Tile.draw-apple (. game-tiles apple-id))
+)
 
  :keypressed (fn keypressed [key set-mode]
                (when (= key "escape")
                  (love.event.quit))
                (when (= key "down")
-                 (Square.search (. game-squares cursor-id) :down))
+                 (Tile.search (. game-tiles cursor-id) :down))
                (when (= key "up")
-                 (Square.search (. game-squares cursor-id) :up))
+                 (Tile.search (. game-tiles cursor-id) :up))
                (when (= key "right")
-                 (Square.search (. game-squares cursor-id) :right))
+                 (Tile.search (. game-tiles cursor-id) :right))
                (when (= key "left")
-                 (Square.search (. game-squares cursor-id) :left)))}
+                 (Tile.search (. game-tiles cursor-id) :left)))}
